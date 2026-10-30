@@ -1,10 +1,18 @@
-# WiFi Screen 1.3
+# WiFi Screen 1.4
 
 Windows 11 screen sharing over Wi-Fi, with a native launcher and bundled modified AirSpan sender.
 
 ## Download
 
-Download **WifiScreen-1.3.zip** from [Releases](https://github.com/puwupuwu/wifi-screen/releases/latest), extract the entire ZIP, and run `WifiScreen.exe`. Keep the `AirPlay` folder beside it. The executable is unsigned.
+Download [**WifiScreen.zip — latest Windows version**](https://github.com/puwupuwu/wifi-screen/releases/latest/download/WifiScreen.zip), extract the entire ZIP, and run `WifiScreen.exe`. Keep the `AirPlay` folder beside it. The executable is unsigned.
+
+The repository URL and earlier release links remain valid. Versioned links keep their original release; the latest download link above follows new releases.
+
+## New in 1.4
+
+- Live Enabled/Disabled switch for AirPlay system audio.
+- Select the network adapter used for AirPlay discovery, with saved preferences and adapter refresh.
+- Automatic scanning or Wi-Fi-only scanning; verified discovery of the TCL TV.
 
 ## Features
 
@@ -15,7 +23,7 @@ Download **WifiScreen-1.3.zip** from [Releases](https://github.com/puwupuwu/wifi
 
 DLNA/DIAL discovery does not implement screen mirroring. Browser mode does not carry audio. Browser capture benchmark was about 28 FPS; actual performance depends on the PC, network and receiver.
 
-AirPlay pairing and visible PC screen playback were confirmed on a TCL 75C845. Actual TV frame rate and audible audio playback were not measured.
+AirPlay pairing and visible PC screen playback were confirmed on a TCL 75C845. Audible AirPlay playback was also confirmed with 1.4 after enabling the audio switch and unmuting the TV. Actual TV frame rate was not measured.
 
 ## Stable browser URL
 

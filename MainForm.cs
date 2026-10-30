@@ -45,7 +45,7 @@ namespace WifiScreen {
             using(var graphics=CreateGraphics()) uiScale=graphics.DpiX/96F;
             AutoScaleMode=AutoScaleMode.None;
             Font=new Font("Segoe UI",10F);
-            Text="WiFi Screen 1.3"; BackColor=background; ForeColor=Color.White;
+            Text="WiFi Screen 1.4"; BackColor=background; ForeColor=Color.White;
             try{settings=ShareSettings.Load(settingsPath);}catch(Exception e){settings=new ShareSettings();MessageBox.Show("Unable to load the saved sharing link. A new link will be used.\n"+e.Message,"WiFi Screen");}
             StartPosition=FormStartPosition.CenterScreen;
             var area=Screen.FromPoint(Cursor.Position).WorkingArea;
@@ -187,7 +187,7 @@ namespace WifiScreen {
             try{Process.Start(chrome,"--new-window https://support.google.com/chrome/answer/3228332");}catch(Exception e){Error(e.Message);}
         }
         void OpenUrl(string link){try{Process.Start(new ProcessStartInfo(link){UseShellExecute=true});}catch(Exception e){Error(e.Message);}}
-        void LaunchAirPlay(){string exe=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"AirPlay","Sender","AirSpan.exe");if(!File.Exists(exe)){Error("The corrected AirPlay sender is missing. Extract the complete WiFi Screen 1.3 package, including its AirPlay/Sender folder.");return;}try{var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};IPAddress tv;if(IPAddress.TryParse(target.Text.Trim(),out tv)&&tv.AddressFamily==AddressFamily.InterNetwork)info.EnvironmentVariables["AIRSPAN_TARGET_IP"]=tv.ToString();Process.Start(info);}catch(Exception e){Error("Unable to open the AirPlay sender: "+e.Message);}}
+        void LaunchAirPlay(){string exe=Path.Combine(AppDomain.CurrentDomain.BaseDirectory,"AirPlay","Sender","AirSpan.exe");if(!File.Exists(exe)){Error("The corrected AirPlay sender is missing. Extract the complete WiFi Screen 1.4 package, including its AirPlay/Sender folder.");return;}try{var info=new ProcessStartInfo(exe){UseShellExecute=false,WorkingDirectory=Path.GetDirectoryName(exe)};IPAddress tv;if(IPAddress.TryParse(target.Text.Trim(),out tv)&&tv.AddressFamily==AddressFamily.InterNetwork)info.EnvironmentVariables["AIRSPAN_TARGET_IP"]=tv.ToString();Process.Start(info);}catch(Exception e){Error("Unable to open the AirPlay sender: "+e.Message);}}
         void StartSharing() {
             if(server!=null)return;
             if(adapters.SelectedItem==null||screens.SelectedIndex<0){Error("Select an active network adapter and a screen first.");return;}

@@ -1,21 +1,19 @@
-WiFi Screen 1.3 / AirSpan local fix — validation October 31, 2026
+WiFi Screen 1.4 — validation October 31, 2026
 
-PASS: WiFi Screen C# compilation.
-PASS: AirSpan frontend production build.
-PASS: 10 Node tests, including route selection with VPN + Wi-Fi, exclusion
-of link-local/loopback interfaces, mDNS unicast query encoding, TCL DNS
-reply parsing and malformed DNS rejection; upstream regression tests pass.
-PASS: Live per-adapter discovery finds TCL 75C845 at 192.168.100.10:7000.
-PASS: Desktop UI lists TV / TCL and uses browser origin 192.168.100.9.
-PASS: User completed pairing by entering the code directly in AirSpan.
-PASS: Reconnect establishes paired AirPlay media connection.
-PASS: H.264 codec configuration and video-frame transmission in logs.
-PASS: User confirmed that the PC screen is visible on the physical TCL TV.
-OBSERVED: System-audio packets sent; audible playback not separately verified.
-NOT MEASURED: Displayed frame rate or long-duration stability of AirPlay.
+PASS: C# native launcher compilation.
+PASS: AirSpan frontend production build and TypeScript type check.
+PASS: All 12 Node tests, including explicit adapter filtering and muted
+PCM payloads preserving audio frame length, plus the previous regressions.
+PASS: Live scan bound only to Wi-Fi 192.168.100.9 discovers TCL TV
+192.168.100.10.
+PASS: Packaged Windows app launched normally; both controls are visible
+at its default 1280 x 900 window size and the TCL receiver is listed.
+LIMIT: Automated native input was unreliable during the UI check;
+live toggle operation and audible TV output need a user listening test.
+The prior 1.3 build completed AirPlay pairing and visible screen sharing
+on this TV. A new live video/audio session was not started for 1.4.
+No new claim is made about measured TV FPS or long-duration stability.
 
-The working test session was left running for the user. The fix preserves
-AirSpan's UI; changes concern route selection, discovery and receiver checks.
-No pairing keys, user profile, private logs or desktop captures are bundled.
-No Windows security settings or firewall rules were changed by the agent.
-The user handled the Windows Firewall prompt.
+Package excludes user profiles, pairing keys, logs and desktop captures.
+
+FOLLOW-UP: User confirmed audible TV playback after enabling audio and correcting the TV remote mute/volume setting. No transport code changes were needed.
