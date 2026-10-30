@@ -1,0 +1,21 @@
+WiFi Screen 1.3 / AirSpan local fix — validation October 31, 2026
+
+PASS: WiFi Screen C# compilation.
+PASS: AirSpan frontend production build.
+PASS: 10 Node tests, including route selection with VPN + Wi-Fi, exclusion
+of link-local/loopback interfaces, mDNS unicast query encoding, TCL DNS
+reply parsing and malformed DNS rejection; upstream regression tests pass.
+PASS: Live per-adapter discovery finds TCL 75C845 at 192.168.100.10:7000.
+PASS: Desktop UI lists TV / TCL and uses browser origin 192.168.100.9.
+PASS: User completed pairing by entering the code directly in AirSpan.
+PASS: Reconnect establishes paired AirPlay media connection.
+PASS: H.264 codec configuration and video-frame transmission in logs.
+PASS: User confirmed that the PC screen is visible on the physical TCL TV.
+OBSERVED: System-audio packets sent; audible playback not separately verified.
+NOT MEASURED: Displayed frame rate or long-duration stability of AirPlay.
+
+The working test session was left running for the user. The fix preserves
+AirSpan's UI; changes concern route selection, discovery and receiver checks.
+No pairing keys, user profile, private logs or desktop captures are bundled.
+No Windows security settings or firewall rules were changed by the agent.
+The user handled the Windows Firewall prompt.
