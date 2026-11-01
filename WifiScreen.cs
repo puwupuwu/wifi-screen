@@ -16,7 +16,7 @@ using System.Threading.Tasks;
 using System.Windows.Forms;
 
 [assembly: System.Reflection.AssemblyTitle("WiFi Screen")]
-[assembly: System.Reflection.AssemblyVersion("1.4.0.0")]
+[assembly: System.Reflection.AssemblyVersion("1.4.2.0")]
 
 namespace WifiScreen {
     static class Program {
@@ -57,11 +57,11 @@ namespace WifiScreen {
         }
     }
     sealed class Device {
-        public string Name, Protocol, Address, Detail;
+        public string Name, Protocol, Address, Detail; public int Port;
         public string Key { get { return Protocol + "|" + Address + "|" + Name; } }
     }
     sealed class DnsRecord {
-        public string Name, Target, Text; public int Type;
+        public string Name, Target, Text; public int Type, Port;
     }
     static class Dns {
         static int U16(byte[] b, ref int p) { if (p + 2 > b.Length) throw new InvalidDataException(); int v = b[p] * 256 + b[p+1]; p += 2; return v; }
@@ -94,6 +94,11 @@ namespace WifiScreen {
                 p += 4; int len = U16(b, ref p), end = p + len;
                 if (end > b.Length) throw new InvalidDataException();
                 if (r.Type == 12) { int q = p; r.Target = Name(b, ref q); if (q > end) throw new InvalidDataException(); }
+                else if (r.Type == 33) {
+                    if (len < 7) throw new InvalidDataException();
+                    int q = p + 4; r.Port = U16(b, ref q); r.Target = Name(b, ref q);
+                    if (q > end) throw new InvalidDataException();
+                }
                 else if (r.Type == 16) {
                     var values = new List<string>(); int q = p;
                     while (q < end) { int n = b[q++]; if (q+n > end) throw new InvalidDataException(); values.Add(Encoding.UTF8.GetString(b,q,n)); q += n; }
@@ -122,7 +127,8 @@ namespace WifiScreen {
                 var txt = all.FirstOrDefault(x => x.Type == 16 && x.Name.Equals(instance, StringComparison.OrdinalIgnoreCase));
                 if (txt != null && txt.Text != null) foreach (string entry in txt.Text.Split('\n'))
                     if (entry.StartsWith("fn=", StringComparison.OrdinalIgnoreCase) && entry.Length > 3) name = entry.Substring(3);
-                result.Add(new Device { Name = name, Protocol = protocol, Address = address, Detail = protocol == "AirPlay" ? "Open the AirPlay tab for the bundled AirSpan sender" : "Screen casting through Google Chrome" });
+                var srv = all.FirstOrDefault(x => x.Type == 33 && x.Name.Equals(instance, StringComparison.OrdinalIgnoreCase));
+                result.Add(new Device { Name = name, Protocol = protocol, Address = address, Port = srv == null ? 0 : srv.Port, Detail = protocol == "AirPlay" ? "Open the AirPlay tab for the bundled AirSpan sender" : "Screen casting through Google Chrome" });
             }
             return result.GroupBy(x => x.Key).Select(g => g.First()).ToList();
         }
@@ -209,6 +215,13 @@ namespace WifiScreen {
             var records=new[] {new DnsRecord {Name="_googlecast._tcp.local",Type=12,Target=instance},new DnsRecord {Name=instance,Type=16,Text="fn=Living room TV\nmd=Chromecast"}};
             var found=Dns.Devices(records,"192.168.1.5"); Check(found.Count==1 && found[0].Name=="Living room TV" && found[0].Protocol=="Google Cast","Cast discovery");
             Check(Dns.Devices(new[] {new DnsRecord {Type=12,Target="TV._airplay._tcp.local"}},"192.168.1.6").Single().Protocol=="AirPlay","AirPlay discovery");
+            var samsungName=Dns.Query("Test TV._airplay._tcp.local");
+            var samsungPacket=new List<byte>(new byte[]{0,0,128,0,0,0,0,1,0,0,0,0});
+            samsungPacket.AddRange(samsungName.Skip(12).Take(samsungName.Length-16));
+            samsungPacket.AddRange(new byte[]{0,33,0,1,0,0,0,120,0,21,0,0,0,0,(byte)(44915>>8),(byte)(44915&255),7,83,97,109,115,117,110,103,5,108,111,99,97,108,0});
+            var samsung=Dns.Devices(Dns.Parse(samsungPacket.ToArray()),"192.0.2.44").Single();
+            Check(samsung.Protocol=="AirPlay"&&samsung.Port==44915,"Samsung AirPlay uses the advertised non-default SRV port");
+            log.AppendLine("PASS: Samsung AirPlay SRV record retains non-default port 44915 for connection diagnostics.");
             Check(Dns.Devices(new[] {new DnsRecord {Type=12,Target="Speaker._raop._tcp.local"}},"192.168.1.6").Count==0,"Audio receiver exclusion");
             log.AppendLine("PASS: DNS names, compression, malformed pointer rejection, query, AirPlay/Cast classification and RAOP exclusion.");
             Check(Discovery.ParseSsdp("HTTP/1.1 200 OK\r\nST: urn:schemas-upnp-org:device:MediaRenderer:1\r\nSERVER: TV\r\n\r\n","192.168.1.7").Protocol=="DLNA","SSDP DLNA");

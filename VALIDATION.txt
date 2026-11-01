@@ -1,19 +1,39 @@
-WiFi Screen 1.4 — validation October 31, 2026
+WiFi Screen 1.4.2 — validation November 1, 2026
+================================================
 
-PASS: C# native launcher compilation.
-PASS: AirSpan frontend production build and TypeScript type check.
-PASS: All 12 Node tests, including explicit adapter filtering and muted
-PCM payloads preserving audio frame length, plus the previous regressions.
-PASS: Live scan bound only to Wi-Fi 192.168.100.9 discovers TCL TV
-192.168.100.10.
-PASS: Packaged Windows app launched normally; both controls are visible
-at its default 1280 x 900 window size and the TCL receiver is listed.
-LIMIT: Automated native input was unreliable during the UI check;
-live toggle operation and audible TV output need a user listening test.
-The prior 1.3 build completed AirPlay pairing and visible screen sharing
-on this TV. A new live video/audio session was not started for 1.4.
-No new claim is made about measured TV FPS or long-duration stability.
+AUTOMATED CHECKS
+PASS: Native C# launcher compilation and native self-tests, including
+HTTP/WebSocket delivery, decoder acknowledgements, latest-frame behavior,
+settings persistence, and listener shutdown.
+PASS: AirSpan TypeScript type check and production frontend build.
+PASS: All 37 sender Node tests. Coverage includes password/PIN selection,
+password preservation, pairing HTTP framing and timeouts, adapter selection,
+PTP audio synchronization, audio encryption nonce continuity beyond RTP
+sequence wraparound, PC mute monitoring/recovery, silent PCM frame sizing,
+and diagnostics redaction.
+PASS: All 8 browser-viewer regression tests against the embedded viewer
+JavaScript. Coverage includes asynchronous WebSocket failure, first-frame
+and stalled-stream timeouts, decoding/drawing/ACK errors, stale callbacks,
+normal decoder acknowledgements, aspect ratio, and polling recovery.
+PASS: Windows audio-endpoint monitor helper compilation and checks.
 
-Package excludes user profiles, pairing keys, logs and desktop captures.
+LIVE SAMSUNG VALIDATION
+Receiver: Samsung UE65TU8000.
+PASS: Receiver discovery and connection through its advertised AirPlay port.
+PASS: Authentication using the TV's configured AirPlay password.
+PASS: Visible PC screen playback confirmed by the user.
+PASS: Audible system sound confirmed by the user.
+PASS: Muting the PC mutes TV audio; unmuting restores it, confirmed by the user.
+The final interface retains the system-audio Enabled/Disabled switch and
+removes the separate receiver volume regulator.
 
-FOLLOW-UP: User confirmed audible TV playback after enabling audio and correcting the TV remote mute/volume setting. No transport code changes were needed.
+LIMITS
+Actual TV displayed FPS and extended-duration stability were not measured.
+Successful playback on this receiver does not establish compatibility with
+every Samsung model or firmware. The native launcher's JPEG browser-sharing
+mode has no audio; its compatibility fallback was regression-tested without
+claiming a separate live Samsung browser playback test.
+
+RELEASE CONTENTS
+The package retains runtime helpers, source archives and third-party notices.
+User profiles, pairing credentials, local logs and desktop captures are excluded.

@@ -1,0 +1,17 @@
+# Local runtime and generated validation artifacts
+/AirPlay/
+/package-staging/
+/WifiScreen.exe
+/self-test-local.txt
+/local-layout*
+/AirSpan-source/node_modules/
+/AirSpan-source/web-dist/
+/AirSpan-source/.tanstack/
+/AirSpan-source/tools/audio-endpoint-monitor/*.exe
+/AirSpan-source/tools/fpsap-helper/*.exe
+/AirSpan-source/tools/audio-endpoint-monitor/VALIDATION.txt
+/release/
+/LOCAL-VALIDATION.txt
+/README-LOCAL-FIX.txt
+/package-local.ps1
+/release-self-test.txt

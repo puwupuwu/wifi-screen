@@ -1,0 +1,45 @@
+WiFi Screen 1.4.2 / modified AirSpan 1.0.5
+========================================
+Upstream project: https://github.com/DiznyP/AirSpan
+Base release: https://github.com/DiznyP/AirSpan/releases/tag/v1.0.1
+
+This package retains the upstream Electron runtime and FairPlay helper,
+and replaces app.asar with the modified sender. The Windows mute monitor
+is an additional read-only helper. This is a modified distribution.
+Connection, pairing, capture and AirPlay streaming run in the independent
+sender window. Close/disconnect that session separately from the launcher.
+No PIN, password, pairing secret or captured media is put on a command line.
+
+SOURCE AND NOTICES
+AirSpan-fixed-source.zip contains the exact modified sender source.
+AirSpan-1.0.1-source.zip retains the original upstream release-tag source.
+Upstream MIT license and third-party notices are retained. The upstream
+source/notices provenance is commit a2a032a90c019c235636491dab62db6ee5b0b880.
+
+fairplay-sap-core-v1.1.0-source.zip contains helper-library source at commit
+1ed575c551f8194bb7703997fd386bbd87e33439, tag v1.1.0. Its LGPL/GPL/Blue Oak
+license texts and provenance notice remain supplied uncompressed.
+AirSpan's tools/fpsap-helper/Main.go, go.mod and go.sum provide the helper
+wrapper and dependency resolution. Together these are the source/relinking
+materials for the unchanged FairPlay helper.
+
+TO REBUILD / MODIFY THE FAIRPLAY HELPER
+Extract the modified sender and helper-library source archives. In the
+sender's tools/fpsap-helper directory, use the Go version in go.mod and a
+local replacement pointing to the extracted/modified library:
+
+go mod edit -replace github.com/objevovat/fairplay-sap-core-airplay2-sender-authentication-handshake=C:\path\to\fairplay-source
+go build -o fairplay-helper.exe .
+
+Then follow BUILD-WINDOWS.md, retaining the replacement helper for packaging.
+The release's unchanged FairPlay helper can alternatively be copied from
+Sender/resources/fairplay-helper.exe into tools/fpsap-helper before building.
+Follow the applicable dependency licenses when modifying or relinking.
+Electron/Chromium and production dependency notices remain in Sender/.
+
+WINDOWS MUTE MONITOR
+tools/audio-endpoint-monitor/Program.cs reads the default playback endpoint
+mute state. Its build.ps1 compiles audio-endpoint-monitor.exe with .NET
+Framework 4.x. The sender starts it hidden and exits it with the parent.
+It does not change Windows volume/mute or capture audio. Both helpers and
+preload.cjs must remain in the packaged Sender/resources folder.

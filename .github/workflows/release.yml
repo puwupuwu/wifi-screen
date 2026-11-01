@@ -1,0 +1,156 @@
+name: Release WiFi Screen 1.4.2
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - RELEASE-NOTES-1.4.2.md
+      - build-release.ps1
+      - .github/workflows/release.yml
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-v1.4.2
+  cancel-in-progress: false
+
+jobs:
+  release:
+    if: >-
+      github.repository == 'puwupuwu/wifi-screen' &&
+      github.ref == 'refs/heads/main' &&
+      (github.event_name == 'workflow_dispatch' ||
+       github.event.head_commit.message == 'Release WiFi Screen 1.4.2')
+    runs-on: windows-latest
+    timeout-minutes: 15
+    defaults:
+      run:
+        shell: pwsh
+    env:
+      RELEASE_TAG: v1.4.2
+      GH_REPO: ${{ github.repository }}
+
+    steps:
+      - name: Check out the release commit
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Preserve any existing release
+        id: existing
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          $releases = gh release list --limit 100 --json tagName,isDraft
+          if ($LASTEXITCODE -ne 0) { throw 'Could not check existing GitHub releases.' }
+          $existing = @($releases | ConvertFrom-Json) | Where-Object tagName -eq $env:RELEASE_TAG
+          if ($existing) {
+            if ($existing.isDraft) {
+              throw "An existing draft $env:RELEASE_TAG was preserved. Inspect it before retrying; this workflow never overwrites release assets."
+            }
+            'published=true' >> $env:GITHUB_OUTPUT
+            "Already published; no changes made: https://github.com/$env:GH_REPO/releases/tag/$env:RELEASE_TAG" >> $env:GITHUB_STEP_SUMMARY
+          } else {
+            'published=false' >> $env:GITHUB_OUTPUT
+          }
+
+      - name: Set up Node.js 22
+        if: steps.existing.outputs.published != 'true'
+        uses: actions/setup-node@49933ea5288caeca8642d1e84afbd3f7d6820020 # v4.4.0
+        with:
+          node-version: '22'
+
+      - name: Install the pinned package manager
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          npm.cmd install --global pnpm@11.25.0
+          if ($LASTEXITCODE -ne 0) { throw 'pnpm installation failed.' }
+
+      - name: Install locked sender dependencies without lifecycle scripts
+        if: steps.existing.outputs.published != 'true'
+        working-directory: AirSpan-source
+        run: |
+          pnpm.cmd install --frozen-lockfile --ignore-scripts
+          if ($LASTEXITCODE -ne 0) { throw 'Locked dependency installation failed.' }
+
+      - name: Verify sender code and build the frontend
+        if: steps.existing.outputs.published != 'true'
+        working-directory: AirSpan-source
+        run: |
+          pnpm.cmd test
+          if ($LASTEXITCODE -ne 0) { throw 'Sender tests failed.' }
+          pnpm.cmd run typecheck
+          if ($LASTEXITCODE -ne 0) { throw 'Sender type check failed.' }
+          pnpm.cmd run build
+          if ($LASTEXITCODE -ne 0) { throw 'Sender production build failed.' }
+
+      - name: Verify browser-viewer regressions
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          node --test browser-viewer.test.cjs
+          if ($LASTEXITCODE -ne 0) { throw 'Browser-viewer tests failed.' }
+
+      - name: Download and verify the original runtime package
+        if: steps.existing.outputs.published != 'true'
+        id: base
+        run: |
+          $archive = Join-Path $env:RUNNER_TEMP 'WifiScreen-1.4.0.zip'
+          $extract = Join-Path $env:RUNNER_TEMP 'WifiScreen-1.4.0'
+          $url = 'https://github.com/puwupuwu/wifi-screen/releases/download/v1.4.0/WifiScreen.zip'
+          Invoke-WebRequest -Uri $url -OutFile $archive
+          $expected = 'A4498AB8E789950B25752C228236583D2B1ACC9116F57D952DEEE3A8D9DBDF72'
+          $actual = (Get-FileHash -LiteralPath $archive -Algorithm SHA256).Hash
+          if ($actual -ne $expected) { throw 'Original runtime archive SHA-256 does not match the audited package.' }
+          Expand-Archive -LiteralPath $archive -DestinationPath $extract
+          $roots = @(Get-ChildItem -LiteralPath $extract -Recurse -File -Filter 'WifiScreen.exe' |
+            Where-Object { Test-Path -LiteralPath (Join-Path $_.Directory.FullName 'AirPlay\Sender\resources\app.asar') } |
+            ForEach-Object { $_.Directory.FullName })
+          if ($roots.Count -ne 1) { throw 'The original package did not contain exactly one complete application root.' }
+          "root=$($roots[0])" >> $env:GITHUB_OUTPUT
+
+      - name: Build the native app, mute helper, and complete release package
+        if: steps.existing.outputs.published != 'true'
+        env:
+          BASE_PACKAGE_ROOT: ${{ steps.base.outputs.root }}
+        run: |
+          & .\build-release.ps1 -BasePackageRoot $env:BASE_PACKAGE_ROOT
+          if ($LASTEXITCODE -ne 0) { throw 'Release packaging failed.' }
+          foreach ($name in @('WifiScreen.zip', 'SHA256SUMS.txt')) {
+            $artifact = Join-Path $env:GITHUB_WORKSPACE "release\v1.4.2\$name"
+            if (-not (Test-Path -LiteralPath $artifact -PathType Leaf)) { throw "Missing release asset: $name" }
+          }
+
+      - name: Run native HTTP, discovery, and streaming self-tests
+        if: steps.existing.outputs.published != 'true'
+        run: |
+          $report = Join-Path $env:RUNNER_TEMP 'wifi-screen-self-test.txt'
+          $executable = Join-Path $env:GITHUB_WORKSPACE 'WifiScreen.exe'
+          $process = Start-Process -FilePath $executable -ArgumentList @('--self-test', "`"$report`"") -WindowStyle Hidden -Wait -PassThru
+          if (Test-Path -LiteralPath $report) { Get-Content -LiteralPath $report }
+          if ($process.ExitCode -ne 0) { throw 'Native self-tests failed.' }
+
+      - name: Publish the complete release
+        if: steps.existing.outputs.published != 'true'
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_COMMIT: ${{ github.sha }}
+        run: |
+          # Stage both assets on a new draft before making the release public.
+          # Deliberately omit --clobber; existing releases/assets are preserved.
+          gh release create $env:RELEASE_TAG --draft --target $env:RELEASE_COMMIT --title 'WiFi Screen 1.4.2' --notes-file RELEASE-NOTES-1.4.2.md
+          if ($LASTEXITCODE -ne 0) { throw 'Could not create the release draft; existing releases were not modified.' }
+          gh release upload $env:RELEASE_TAG 'release/v1.4.2/WifiScreen.zip' 'release/v1.4.2/SHA256SUMS.txt'
+          if ($LASTEXITCODE -ne 0) { throw 'Asset upload failed. The release remains an unpublished draft.' }
+          $uploaded = gh release view $env:RELEASE_TAG --json assets
+          if ($LASTEXITCODE -ne 0) { throw 'Could not verify the uploaded draft assets.' }
+          $assets = @((($uploaded | ConvertFrom-Json).assets).name)
+          if ($assets.Count -ne 2 -or 'WifiScreen.zip' -notin $assets -or 'SHA256SUMS.txt' -notin $assets) {
+            throw 'The draft asset set is incomplete; the release remains unpublished.'
+          }
+          gh release edit $env:RELEASE_TAG --draft=false --latest
+          if ($LASTEXITCODE -ne 0) { throw 'Could not publish the completed release draft.' }
+          $releaseUrl = gh release view $env:RELEASE_TAG --json url --jq .url
+          if ($LASTEXITCODE -ne 0) { throw 'Release published, but its final URL could not be read.' }
+          "Published release: $releaseUrl" >> $env:GITHUB_STEP_SUMMARY

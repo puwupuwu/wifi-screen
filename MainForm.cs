@@ -45,7 +45,7 @@ namespace WifiScreen {
             using(var graphics=CreateGraphics()) uiScale=graphics.DpiX/96F;
             AutoScaleMode=AutoScaleMode.None;
             Font=new Font("Segoe UI",10F);
-            Text="WiFi Screen 1.4"; BackColor=background; ForeColor=Color.White;
+            Text="WiFi Screen 1.4.2"; BackColor=background; ForeColor=Color.White;
             try{settings=ShareSettings.Load(settingsPath);}catch(Exception e){settings=new ShareSettings();MessageBox.Show("Unable to load the saved sharing link. A new link will be used.\n"+e.Message,"WiFi Screen");}
             StartPosition=FormStartPosition.CenterScreen;
             var area=Screen.FromPoint(Cursor.Position).WorkingArea;
@@ -59,10 +59,10 @@ namespace WifiScreen {
             root.Controls.Add(tabs,0,1); Controls.Add(root);
 
             var connect=Page("Connect TV");
-            Add(connect,Heading("Connect to your TCL TV"));
+            Add(connect,Heading("Connect to your TV"));
             Add(connect,TextLine("Choose Google Cast for a TV that advertises it. Windows Cast is a separate option for Miracast receivers."));
             Add(connect,FieldLabel("TV address"));
-            target=new TextBox { Text="192.168.100.10",Dock=DockStyle.Top,Margin=new Padding(0,0,0,Px(8)) }; Add(connect,target);
+            target=new TextBox { Text="",Dock=DockStyle.Top,Margin=new Padding(0,0,0,Px(8)) }; Add(connect,target);
             var targetActions=Actions();
             check=Button("Check TV connection",async delegate { await CheckTv(); },true); targetActions.Controls.Add(check);
             targetActions.Controls.Add(Button("Google Cast setup",delegate { tabs.SelectedIndex=1; },false));
@@ -82,12 +82,12 @@ namespace WifiScreen {
 
             var cast=Page("Google Cast");
             Add(cast,Heading("Share your entire desktop with Chrome"));
-            Add(cast,TextLine("Your TCL TV advertised Google Cast in the first scan. This is the recommended path for that service; it does not require a browser on the TV."));
-            Add(cast,TextLine("1. Keep the PC and TV on the same Wi-Fi network.\n\n2. Open Google Chrome on the PC.\n\n3. Open the three-dot menu, then Cast, save and share > Cast.\n\n4. In the Cast panel, choose Sources > Cast screen.\n\n5. Select TV (your TCL at 192.168.100.10), then choose the screen to share.\n\nStop the session in Chrome's Cast control."));
-            var browserActions=Actions(); browserActions.Controls.Add(Button("Open Chrome",delegate { OpenChrome(); },true)); browserActions.Controls.Add(Button("TCL casting instructions",delegate { OpenUrl("https://support.tcl.com/en_CA/screen-mirroring-to-a-tcl-google-tv"); },false)); Add(cast,browserActions);
+            Add(cast,TextLine("Use this option for a TV that advertises Google Cast. It does not require a browser on the TV."));
+            Add(cast,TextLine("1. Keep the PC and TV on the same Wi-Fi network.\n\n2. Open Google Chrome on the PC.\n\n3. Open the three-dot menu, then Cast, save and share > Cast.\n\n4. In the Cast panel, choose Sources > Cast screen.\n\n5. Select your TV, then choose the screen to share.\n\nStop the session in Chrome's Cast control."));
+            var browserActions=Actions(); browserActions.Controls.Add(Button("Open Chrome",delegate { OpenChrome(); },true)); browserActions.Controls.Add(Button("Chrome casting instructions",delegate { OpenUrl("https://support.google.com/chrome/answer/3228332"); },false)); Add(cast,browserActions);
             Add(cast,Heading("If the TV does not appear"));
             Add(cast,TextLine("Return to Connect TV and run Check TV connection and Scan network. A successful port check shows network reachability, not a completed casting session.\n\nKeep the TV awake. Guest Wi-Fi, client isolation and VPN routing can interfere. Allow the browser on your private network if Windows requests it.\n\nWindows Cast (Win+K) requires Miracast support. A Google Cast or AirPlay advertisement does not establish Miracast support."));
-            Add(cast,TextLine("WiFi Screen discovers Google Cast receivers and guides the Chrome connection. It does not contain a native Google Cast or AirPlay sender."));
+            Add(cast,TextLine("WiFi Screen discovers Google Cast receivers and guides the Chrome connection. For AirPlay, use the bundled sender in the AirPlay tab."));
 
             var browser=Page("Browser sharing");
             Add(browser,Heading("Share to a browser running on the TV"));
@@ -110,7 +110,7 @@ namespace WifiScreen {
             var linkActions=Actions(); copy=Button("Copy link",delegate { if(server!=null) try { Clipboard.SetText(server.Url); } catch(Exception e) { Error(e.Message); } },false); preview=Button("Test link on this PC",delegate { if(server!=null) OpenUrl(server.Url); },false); copy.Enabled=false;preview.Enabled=false;linkActions.Controls.Add(copy);linkActions.Controls.Add(preview); Add(browser,linkActions);
             resetLink=Button("Replace saved private link",delegate {try{settings.Token=ShareSettings.NewToken();settings.Save(settingsPath);url.Text="Private link replaced. Start sharing to see the new address.";}catch(Exception e){Error(e.Message);}},false);Add(browser,resetLink);
             Add(browser,TextLine("Bookmark the link on the TV once. Keep the same PC Wi-Fi IP with a DHCP reservation in your router. The port and private path are saved locally; the app does not alter router settings. If the port is busy, it reports the problem instead of silently changing your URL."));
-            Add(browser,TextLine("The link uses your PC's Wi-Fi IP (currently expected: 192.168.100.9). The TV at 192.168.100.10 opens that link to receive frames. Local preview is not proof that the TV can connect."));
+            Add(browser,TextLine("The link uses the selected PC network address. Open it on the TV to receive frames. Local preview is not proof that the TV can connect."));
             Add(browser,Heading("If it says waiting for TV"));
             Add(browser,TextLine("Check that the TV browser has the complete link, including its port and private code. If local preview works but the TV cannot load it, check the Windows firewall and Wi-Fi client isolation.\n\n30 fps is a target, not a guarantee. The TV page shows measured displayed FPS; try the faster size if it is low. No audio in browser sharing. HTTP is unencrypted: anyone with the saved link can view future sessions while you are sharing. Use Replace saved private link to revoke it. Closing this app stops browser sharing."));
 
@@ -123,7 +123,7 @@ namespace WifiScreen {
             var airplay=Page("AirPlay sender");
             Add(airplay,Heading("AirPlay screen mirroring · powered by AirSpan"));
             Add(airplay,TextLine("The package includes a corrected AirSpan sender with route-aware network selection and discovery on each adapter. It keeps the AirSpan interface and opens in its own window to handle pairing, screen capture and H.264 streaming."));
-            Add(airplay,TextLine("1. Open the bundled sender below.\n2. Select TV / TCL at 192.168.100.10.\n3. Enter the TV's PIN in the sender if requested, then select Reconnect.\n4. Click Share screen in the sender.\n5. Stop sharing in that window when finished.\n\nDiscovery, pairing, media connection and visible screen playback were verified with your TCL 75C845. Audio packets were sent; audible playback has not been separately confirmed. Its capture controls are separate from Browser sharing."));
+            Add(airplay,TextLine("1. Open the bundled sender below.\n2. Select your TV by its advertised name.\n3. Enter the TV's PIN in the sender if requested, then select Reconnect.\n4. Click Share screen in the sender.\n5. Stop sharing in that window when finished.\n\nSome TVs use a configured AirPlay password instead of showing a new PIN. Check Apple AirPlay Settings on the TV if no code appears. AirPlay capture controls are separate from Browser sharing."));
             var airActions=Actions();airActions.Controls.Add(Button("Open AirPlay sender",delegate{LaunchAirPlay();},true));airActions.Controls.Add(Button("AirSpan project",delegate{OpenUrl("https://github.com/DiznyP/AirSpan");},false));Add(airplay,airActions);
             Add(airplay,TextLine("Keep the AirPlay folder beside WifiScreen.exe. The sender is a separate process: closing WiFi Screen or pressing Stop browser sharing does not disconnect an AirPlay session. The bundled version and license/source notices are in AirPlay/."));
             timer.Interval=500; timer.Tick+=delegate { CaptureFrame(); };
@@ -158,11 +158,13 @@ namespace WifiScreen {
         void RefreshAdapters() { adapters.Items.Clear();foreach(var a in Adapter.All())adapters.Items.Add(a);if(adapters.Items.Count>0)adapters.SelectedIndex=0;SelectRoute(); }
         void SelectRoute() { if(server!=null)return;IPAddress tv;if(!IPAddress.TryParse(target.Text.Trim(),out tv))return;var address=NetworkCheck.Route(tv);if(address==null)return;for(int i=0;i<adapters.Items.Count;i++)if(((Adapter)adapters.Items[i]).Address.Equals(address)){adapters.SelectedIndex=i;break;} }
         async Task CheckTv() {
-            IPAddress tv;if(!IPAddress.TryParse(target.Text.Trim(),out tv)||tv.AddressFamily!=AddressFamily.InterNetwork||IPAddress.IsLoopback(tv)){Error("Enter the TV's IPv4 address, such as 192.168.100.10.");return;}
+            IPAddress tv;if(!IPAddress.TryParse(target.Text.Trim(),out tv)||tv.AddressFamily!=AddressFamily.InterNetwork||IPAddress.IsLoopback(tv)){Error("Select a discovered TV or enter its IPv4 address.");return;}
             check.Enabled=false;routeStatus.Text="Checking the route and TV services...";diagnostics.Text="Checking "+tv+"...";
             try {
                 if(server==null)RefreshAdapters();
-                string report=await Task.Run(()=>NetworkCheck.Check(tv));if(IsDisposed)return;diagnostics.Text=report;
+                var receiver=rows.Values.Select(item=>(Device)item.Tag).FirstOrDefault(d=>d.Address==tv.ToString()&&d.Protocol=="AirPlay"&&d.Port>0);
+                int airplayPort=receiver==null?7000:receiver.Port;
+                string report=await Task.Run(()=>NetworkCheck.Check(tv,airplayPort));if(IsDisposed)return;diagnostics.Text=report;
                 var route=NetworkCheck.Route(tv);routeStatus.Text="TV: "+tv+"\nPC route: "+(route==null?"unavailable":route.ToString())+"\n"+report.Split('\n').Last(x=>x.StartsWith("Result:"));
             }catch(Exception e){if(!IsDisposed){routeStatus.Text="Check failed: "+e.Message;diagnostics.Text=e.ToString();}}
             finally{if(!IsDisposed)check.Enabled=true;}
@@ -172,9 +174,8 @@ namespace WifiScreen {
             if(scanCancel!=null)scanCancel.Dispose();scanCancel=new CancellationTokenSource();if(server==null)RefreshAdapters();
             try {
                 await Discovery.Scan(d=>UI(delegate {
-                    if(rows.ContainsKey(d.Key))return;
-                    string name=d.Address=="192.168.100.10"?"TCL TV · "+d.Name:d.Name;
-                    var item=new ListViewItem(new[]{name,d.Protocol,d.Address});item.Tag=d;rows[d.Key]=item;devices.Items.Add(item);
+                    if(rows.ContainsKey(d.Key)){if(d.Port>0)((Device)rows[d.Key].Tag).Port=d.Port;return;}
+                    var item=new ListViewItem(new[]{d.Name,d.Protocol,d.Address});item.Tag=d;rows[d.Key]=item;devices.Items.Add(item);
                 }),s=>UI(delegate{scanErrors.Add(s);}),scanCancel.Token);
                 UI(delegate { scanStatus.Text=rows.Count+" receiver service(s) found"+(scanErrors.Count>0?". Errors are in Diagnostics.":". Select one for details.");if(scanErrors.Count>0)diagnostics.AppendText("\r\n\r\n"+String.Join("\r\n",scanErrors));scan.Enabled=true; });
             }catch(Exception e){if(!IsDisposed){scanStatus.Text="Scan failed: "+e.Message;scan.Enabled=true;}}
@@ -263,15 +264,16 @@ namespace WifiScreen {
         public static IPAddress Route(IPAddress target) {
             try{using(var socket=new Socket(AddressFamily.InterNetwork,SocketType.Dgram,ProtocolType.Udp)){socket.Connect(new IPEndPoint(target,8009));return ((IPEndPoint)socket.LocalEndPoint).Address;}}catch(SocketException){return null;}
         }
-        public static string Check(IPAddress target) {
+        public static string Check(IPAddress target,int airplayPort=7000) {
             var report=new StringBuilder();report.AppendLine("TV: "+target);report.AppendLine("PC route address: "+Route(target));report.AppendLine();
             bool reachable=false;
-            foreach(int port in new[]{8009,8008,7000}) {
-                string name=port==8009?"Google Cast":port==8008?"DIAL / device information":"AirPlay";
+            foreach(int port in new[]{airplayPort,8009,8008,8001}.Distinct()) {
+                string name=port==airplayPort?"AirPlay":port==8009?"Google Cast":port==8008?"DIAL / device information":"Samsung device information";
                 using(var client=new TcpClient())try{var result=client.BeginConnect(target,port,null,null);using(result.AsyncWaitHandle){if(!result.AsyncWaitHandle.WaitOne(1500)){report.AppendLine(name+" ("+port+"): timed out");continue;}client.EndConnect(result);report.AppendLine(name+" ("+port+"): TCP reachable");reachable=true;}}catch(SocketException e){report.AppendLine(name+" ("+port+"): "+e.SocketErrorCode);}
             }
             report.AppendLine();report.AppendLine("Browser sharing works in the reverse direction: the TV must open the PC's session link.");report.AppendLine("This test cannot prove the TV can reach the PC through Windows Firewall.");
-            report.AppendLine(reachable?"Result: TV services reachable. Use Google Cast setup or open the browser session link on the TV.":"Result: No checked TV ports responded. Check the IP, power, network and casting settings.");return report.ToString();
+            report.AppendLine("AirPlay uses the discovered service port; scan and select your TV before checking. Without discovery, 7000 is only a default probe.");
+            report.AppendLine(reachable?"Result: TV services reachable. Select an advertised casting service or open the browser session link on the TV.":"Result: No checked ports responded. This does not prove the TV is offline; scan for its advertised services and check its IP and casting settings.");return report.ToString();
         }
     }
 }

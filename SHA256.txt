@@ -1,2 +1,6 @@
-8668E8C2EAE85269308059C6CEA593CC80CAB107017E4FF225BADC14D374DACA  WifiScreen.exe
-102C136905A0DD40FA7478252707601D6FFEB75DB95C33064F1FF227B405288D  AirPlay\Sender\resources\app.asar
+Release archive checksums are attached to each GitHub release as SHA256SUMS.txt.
+The complete download also contains SHA256.txt with checksums for its binaries
+and exact modified sender source archive.
+
+Latest release checksums:
+https://github.com/puwupuwu/wifi-screen/releases/latest/download/SHA256SUMS.txt
